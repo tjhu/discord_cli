@@ -19,7 +19,17 @@ var commandsCmd = &cobra.Command{
 	},
 }
 
+// commandsGetCmd represents the get command
+var commandsGetCmd = &cobra.Command{
+	Use:   "get",
+	Short: "Get a list of commands. Guild commands if guild id is specified; global commands otherwise",
+	Run: func(cmd *cobra.Command, args []string) {
+		da.GetCommands()
+	},
+}
+
 func init() {
+	commandsCmd.AddCommand(commandsGetCmd)
 	rootCmd.AddCommand(commandsCmd)
 
 	// Here you will define your flags and configuration settings.

@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/uav-gaming/discord_api"
 )
 
 const CONFIG_FILENAME string = ".discord_cli"
@@ -26,7 +27,10 @@ type Configuration struct {
 	UserID        discord.Snowflake
 }
 
-var config Configuration
+var (
+	config Configuration
+	da     *discord_api.DiscordApi
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -35,9 +39,12 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if viper.Get("discord_token") == "" || viper.Get("application_id") == "" {
+		token := viper.GetString("discord_token")
+		application_id := viper.GetUint64("application_id")
+		if token == "" || application_id == 0 {
 			logrus.Fatal("Required configs are not set. Either set them with `discord_cli config` or through command line flags")
 		}
+		da = discord_api.NewDiscordApi(token, discord.Snowflake(application_id))
 	},
 }
 
