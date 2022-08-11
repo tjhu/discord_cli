@@ -8,70 +8,82 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
+const CONFIG_FILENAME string = ".discord_cli"
+
+// CLI configurations/flags.
+type Configuration struct {
+	// Path to the configuration file in used.
+	ConfigFile    string
+	DiscordToken  string
+	ApplicationID discord.Snowflake
+	GuildID       discord.Snowflake
+	UserID        discord.Snowflake
+}
+
+var config Configuration
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "discord_cli",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "A CLI tool for interacting with the Discord REST APIs.",
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if viper.Get("discord_token") == "" || viper.Get("application_id") == "" {
+			logrus.Fatal("Required configs are not set. Either set them with `discord_cli config` or through command line flags")
+		}
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
+	cobra.CheckErr(err)
 }
 
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
+	// A list of flags that can be set in the config file.
+	rootCmd.PersistentFlags().StringVarP(&config.DiscordToken, "discord_token", "t", "", "Discord token.")
+	rootCmd.PersistentFlags().Uint64VarP((*uint64)(&config.ApplicationID), "application_id", "a", 0, "Discord application ID.")
+	rootCmd.PersistentFlags().Uint64VarP((*uint64)(&config.GuildID), "guild_id", "g", 0, "Discord guild ID.")
+	rootCmd.PersistentFlags().Uint64VarP((*uint64)(&config.GuildID), "user_id", "u", 0, "Discord user ID.")
+	viper.BindPFlags(rootCmd.PersistentFlags())
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.discord_cli.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// Flags that cannot be set in the config file.
+	rootCmd.PersistentFlags().StringVar(&config.ConfigFile, "config", "", fmt.Sprintf("config file (default is $HOME/%s)", CONFIG_FILENAME))
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" {
+	if config.ConfigFile != "" {
 		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
+		viper.SetConfigFile(config.ConfigFile)
 	} else {
 		// Find home directory.
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 
-		// Search config in home directory with name ".discord_cli" (without extension).
+		// Search config in home directory and the current directory with name ".discord_cli" (without extension).
 		viper.AddConfigPath(home)
+		viper.AddConfigPath(".")
 		viper.SetConfigType("yaml")
-		viper.SetConfigName(".discord_cli")
+		viper.SetConfigName(CONFIG_FILENAME)
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		config.ConfigFile = viper.ConfigFileUsed()
+		fmt.Fprintln(os.Stderr, "Using config file:", config.ConfigFile)
 	}
 }

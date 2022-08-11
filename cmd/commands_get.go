@@ -5,8 +5,7 @@ Copyright © 2022 Tianjiao Huang <tjhu@tjhu.dev>
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +14,7 @@ var commandsGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get a list of commands. Guild commands if guild id is specified; global commands otherwise",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("get called")
+		logrus.Println(config)
 	},
 }
 

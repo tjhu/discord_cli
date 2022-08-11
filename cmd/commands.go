@@ -13,7 +13,7 @@ import (
 // commandsCmd represents the commands command
 var commandsCmd = &cobra.Command{
 	Use:   "commands",
-	Short: "Interactive with Application Commands APIs.\nhttps://discord.com/developers/docs/interactions/application-commands",
+	Short: "Application Commands APIs. https://discord.com/developers/docs/interactions/application-commands",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("commands called")
 	},
