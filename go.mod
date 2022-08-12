@@ -8,12 +8,11 @@ require (
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/cobra-cli v1.3.0
 	github.com/spf13/viper v1.12.0
-	github.com/uav-gaming/discord_api v0.0.0-20220811014246-40e916094937
 )
 
 require (
-	github.com/diamondburned/arikawa v1.3.14 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
+	github.com/gorilla/schema v1.2.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect

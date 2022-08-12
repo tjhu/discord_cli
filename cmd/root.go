@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/diamondburned/arikawa/v3/api"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/uav-gaming/discord_api"
 )
 
 const CONFIG_FILENAME string = ".discord_cli"
@@ -22,15 +22,26 @@ type Configuration struct {
 	// Path to the configuration file in used.
 	ConfigFile    string
 	DiscordToken  string
-	ApplicationID discord.Snowflake
-	GuildID       discord.Snowflake
-	UserID        discord.Snowflake
+	ApplicationID discord.AppID
+	GuildID       discord.GuildID
+	UserID        discord.UserID
 }
 
+// Globals
 var (
 	config Configuration
-	da     *discord_api.DiscordApi
+	client *api.Client
 )
+
+// Helper for child commands to invoke the ancestors' `PersistentPreRun`
+// https://github.com/spf13/cobra/issues/216#issuecomment-703846787
+func callPersistentPreRun(cmd *cobra.Command, args []string) {
+	if parent := cmd.Parent(); parent != nil {
+		if parent.PersistentPreRun != nil {
+			parent.PersistentPreRun(parent, args)
+		}
+	}
+}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -39,12 +50,14 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		callPersistentPreRun(cmd, args)
 		token := viper.GetString("discord_token")
-		application_id := viper.GetUint64("application_id")
-		if token == "" || application_id == 0 {
+		application_id := discord.AppID(viper.GetUint64("application_id"))
+
+		if token == "" || !application_id.IsValid() {
 			logrus.Fatal("Required configs are not set. Either set them with `discord_cli config` or through command line flags")
 		}
-		da = discord_api.NewDiscordApi(token, discord.Snowflake(application_id))
+		client = api.NewClient(token)
 	},
 }
 
@@ -61,7 +74,8 @@ func init() {
 	// A list of flags that can be set in the config file.
 	rootCmd.PersistentFlags().StringVarP(&config.DiscordToken, "discord_token", "t", "", "Discord token.")
 	rootCmd.PersistentFlags().Uint64VarP((*uint64)(&config.ApplicationID), "application_id", "a", 0, "Discord application ID.")
-	rootCmd.PersistentFlags().Uint64VarP((*uint64)(&config.GuildID), "guild_id", "g", 0, "Discord guild ID.")
+	// No shorthand for the 'guild_id' flag because it will conflict with the 'guild' command.
+	rootCmd.PersistentFlags().Uint64Var((*uint64)(&config.GuildID), "guild_id", 0, "Discord guild ID.")
 	rootCmd.PersistentFlags().Uint64VarP((*uint64)(&config.GuildID), "user_id", "u", 0, "Discord user ID.")
 	viper.BindPFlags(rootCmd.PersistentFlags())
 
